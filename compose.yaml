@@ -1,0 +1,22 @@
+services:
+  mcp-rag:
+    build: .
+    ports:
+      - "127.0.0.1:8000:8000"
+    environment:
+      RAG_PROVIDER: ${RAG_PROVIDER:-local}
+      RAG_LOCAL_PATH: /app/data/corpus.json
+      RAG_OBJECT: ${RAG_OBJECT:-}
+      RAG_BUCKET: ${RAG_BUCKET:-}
+      AWS_REGION: ${AWS_REGION:-}
+      AZURE_STORAGE_ACCOUNT_URL: ${AZURE_STORAGE_ACCOUNT_URL:-}
+      AZURE_STORAGE_CONTAINER: ${AZURE_STORAGE_CONTAINER:-}
+      GCP_PROJECT_ID: ${GCP_PROJECT_ID:-}
+      OTEL_EXPORTER_OTLP_TRACES_ENDPOINT: ${OTEL_EXPORTER_OTLP_TRACES_ENDPOINT:-}
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    tmpfs: ["/tmp:size=16m,noexec,nosuid"]
+    mem_limit: 256m
+    cpus: 1.0
+    pids_limit: 100

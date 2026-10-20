@@ -1,0 +1,16 @@
+.env
+.env.local
+.env.*
+!.env.example
+.venv/
+venv/
+__pycache__/
+.pytest_cache/
+*.pyc
+*.egg-info/
+build/
+dist/
+cdktf.out/
+.terraform/
+*.tfstate*
+*.tfplan

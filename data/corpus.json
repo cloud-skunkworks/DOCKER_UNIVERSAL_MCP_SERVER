@@ -1,0 +1,17 @@
+[
+  {
+    "id": "idempotency",
+    "title": "Demo payment idempotency",
+    "text": "Synthetic demo guidance: reuse the same idempotency key when retrying a payment request. Check the original status before starting a replacement payment. This KB does not authorize transactions."
+  },
+  {
+    "id": "rate-limits",
+    "title": "Demo rate limit handling",
+    "text": "For HTTP 429 responses, honor Retry-After and use bounded exponential backoff with jitter. Escalate persistent errors to the application owner."
+  },
+  {
+    "id": "telemetry",
+    "title": "Demo telemetry policy",
+    "text": "Do not record card numbers, customer identifiers, secrets, or prompt text in telemetry. Export operational metrics and traces via OpenTelemetry to an approved collector."
+  }
+]

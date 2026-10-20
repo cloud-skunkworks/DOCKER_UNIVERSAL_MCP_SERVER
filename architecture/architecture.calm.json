@@ -1,0 +1,241 @@
+{
+  "$schema": "https://calm.finos.org/release/1.0/meta/calm.json",
+  "nodes": [
+    {
+      "unique-id": "agent",
+      "node-type": "service",
+      "name": "Agent host",
+      "description": "External agent orchestrates retrieval and model generation."
+    },
+    {
+      "unique-id": "mcp",
+      "node-type": "service",
+      "name": "MCP RAG service",
+      "description": "Python MCP v2 tools, resources and prompt; read-only snapshot."
+    },
+    {
+      "unique-id": "corpus",
+      "node-type": "data-asset",
+      "name": "Approved corpus",
+      "description": "One bounded JSON document set; local, S3, Azure Blob or GCS."
+    },
+    {
+      "unique-id": "collector",
+      "node-type": "service",
+      "name": "OTel Collector",
+      "description": "Optional operator-managed private OTLP collector."
+    },
+    {
+      "unique-id": "container",
+      "node-type": "system",
+      "name": "Docker container",
+      "description": "Non-root runtime; loopback host port for the demo."
+    }
+  ],
+  "relationships": [
+    {
+      "unique-id": "agent-mcp",
+      "description": "Loopback demo MCP; TLS and auth required for shared hosting.",
+      "protocol": "HTTP",
+      "relationship-type": {
+        "connects": {
+          "source": {
+            "node": "agent"
+          },
+          "destination": {
+            "node": "mcp"
+          }
+        }
+      }
+    },
+    {
+      "unique-id": "mcp-corpus",
+      "description": "Cloud variant startup read; local variant uses filesystem.",
+      "protocol": "HTTPS",
+      "relationship-type": {
+        "connects": {
+          "source": {
+            "node": "mcp"
+          },
+          "destination": {
+            "node": "corpus"
+          }
+        }
+      }
+    },
+    {
+      "unique-id": "mcp-collector",
+      "description": "Optional OTLP export; approved endpoint from environment.",
+      "protocol": "HTTPS",
+      "relationship-type": {
+        "connects": {
+          "source": {
+            "node": "mcp"
+          },
+          "destination": {
+            "node": "collector"
+          }
+        }
+      }
+    },
+    {
+      "unique-id": "mcp-deployment",
+      "relationship-type": {
+        "deployed-in": {
+          "container": "container",
+          "nodes": [
+            "mcp"
+          ]
+        }
+      }
+    }
+  ],
+  "metadata": {
+    "code-spec-version": "1.0.0",
+    "status": "demo; TOGAF-aligned, not certified or production approved",
+    "requirements": [
+      {
+        "id": "REQ-001",
+        "shall": "Expose MCP search, resource and prompt interfaces",
+        "implementation": "src/mcp_rag/server.py",
+        "verification": "tests/test_mcp.py",
+        "status": "implemented"
+      },
+      {
+        "id": "REQ-002",
+        "shall": "Return deterministic ranked evidence and stable citations",
+        "implementation": "src/mcp_rag/corpus.py",
+        "verification": "tests/test_corpus.py",
+        "status": "implemented"
+      },
+      {
+        "id": "REQ-003",
+        "shall": "Support local, AWS, Azure and GCP corpus sources",
+        "implementation": "src/mcp_rag/storage.py",
+        "verification": "tests/test_storage.py",
+        "status": "implemented; cloud tests use mocks"
+      },
+      {
+        "id": "REQ-004",
+        "shall": "Bound corpus, query and response size",
+        "implementation": "src/mcp_rag/corpus.py",
+        "verification": "tests/test_corpus.py",
+        "status": "implemented"
+      },
+      {
+        "id": "REQ-005",
+        "shall": "Default Docker exposure to loopback and non-root",
+        "implementation": "compose.yaml",
+        "verification": "Docker CI job",
+        "status": "implemented; runtime verification pending"
+      },
+      {
+        "id": "REQ-006",
+        "shall": "Use workload identities and read-only cloud permissions",
+        "implementation": "docs/CLOUD.md",
+        "verification": "Cloud platform review",
+        "status": "deployment obligation"
+      },
+      {
+        "id": "REQ-007",
+        "shall": "Never export query or corpus content in telemetry",
+        "implementation": "src/mcp_rag/server.py",
+        "verification": "tests/test_telemetry.py",
+        "status": "implemented for application spans"
+      },
+      {
+        "id": "REQ-008",
+        "shall": "Validate CALM and reject architecture drift",
+        "implementation": "scripts/export_calm.py",
+        "verification": "tests/test_architecture.py",
+        "status": "implemented"
+      },
+      {
+        "id": "REQ-009",
+        "shall": "Require TLS, OAuth audience validation, access policy and audit review before shared hosting",
+        "implementation": "SECURITY.md",
+        "verification": "Architecture and security approval",
+        "status": "production gate; not implemented"
+      },
+      {
+        "id": "REQ-010",
+        "shall": "Require human approval for financial actions",
+        "implementation": "docs/ARCHITECTURE.md",
+        "verification": "Agent host governance",
+        "status": "host obligation; service exposes no transaction tools"
+      }
+    ],
+    "togaf": {
+      "A": "vision and stakeholders",
+      "B": "support knowledge retrieval capability",
+      "C": "MCP interfaces and document contract",
+      "D": "Docker, cloud storage, OTel",
+      "E-F": "demo to governed deployment roadmap",
+      "G": "CI evidence plus approval gates",
+      "H": "versioned spec and ADR change control"
+    },
+    "interfaces": [
+      {
+        "name": "search_kb",
+        "kind": "tool",
+        "input": {
+          "query": "string, 1..500 nonblank characters",
+          "limit": "integer 1..10, default 3"
+        },
+        "output": "matches[id,title,text,citation,sha256,score], retrieval, untrusted_content"
+      },
+      {
+        "name": "kb://articles",
+        "kind": "resource",
+        "output": "JSON list of IDs and titles"
+      },
+      {
+        "name": "kb://documents/{document_id}",
+        "kind": "resource",
+        "output": "document text or error"
+      },
+      {
+        "name": "grounded_answer",
+        "kind": "prompt",
+        "input": {
+          "question": "string 1..500 nonblank characters"
+        },
+        "output": "grounding instructions and JSON-encoded question"
+      }
+    ],
+    "data-contract": {
+      "format": "UTF-8 JSON array",
+      "required_fields": [
+        "id",
+        "title",
+        "text"
+      ],
+      "max_bytes": 1048576,
+      "max_documents": 200,
+      "max_text_characters": 12000,
+      "classification": "synthetic or pre-approved sanitized internal data"
+    },
+    "decisions": [
+      "ADR-001: immutable startup snapshot; restart to refresh",
+      "ADR-002: lexical retrieval; no embedding cost",
+      "ADR-003: identity-based cloud SDK clients",
+      "ADR-004: architecture JSON is authoritative; generated CALM is checked in CI"
+    ],
+    "scope": {
+      "included": [
+        "retrieval",
+        "cloud object-storage adapters",
+        "MCP client example",
+        "Docker",
+        "CALM export"
+      ],
+      "excluded": [
+        "model inference",
+        "vector database",
+        "financial actions",
+        "cloud provisioning",
+        "production OAuth gateway"
+      ]
+    }
+  }
+}
