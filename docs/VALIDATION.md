@@ -55,3 +55,35 @@ Compose v5.6.0, MCP 2.3.0. Pins are from requirements.lock after the rc2 refresh
 
 Refreshed pins: starlette 1.9.0, httpx2 2.14.0, httpcore2 2.14.0, google-cloud-storage 3.17.1,
 certifi 2026.10.18. `mcp` 2.3.0 was already the latest stable release.
+
+
+# Stability refresh — 2026-11-12
+
+Scope: integrate PRs #1, #6, #7, #8, #9 and #10 with synchronized constraints.
+The boto3 update requires a matching botocore update. The OTLP HTTP exporter
+update requires the compatible OTel 1.45.2 / 0.66b2 dependency family.
+CI now tests Python 3.12 and 3.15 and runs pip check. The telemetry payload test
+uses an explicit always-on sampler so host sampling configuration cannot suppress
+its assertion. Runtime sampling behavior is unchanged.
+
+Historical evidence: main commit fff430bde58430ddfcc551a7eadcdf1f3a831a76 passed
+[GitHub Actions run 40716883771](https://github.com/cloud-skunkworks/DOCKER_UNIVERSAL_MCP_SERVER/actions/runs/40716883771)
+on October 28: 38 tests in 2.73 seconds on Python 3.12.15; verify.ps1 and CALM
+checks passed; the Python 3.15 container built, became healthy and returned the
+idempotency result through the MCP client. The earlier “Actions not run” and
+“Python 3.12 matches the container” statements are historical, not current status.
+
+Local integrated validation passed on November 12: 38 tests on Python 3.12.14
+(4.27 s) and 38 tests on Python 3.15.2 (3.91 s); CALM checks passed on both;
+pip check (3.12) and uv pip check (3.15) found no dependency conflicts.
+Workspace proxy variables were removed for localhost tests.
+
+The integrated changes must pass both CI matrix jobs before merge. Consult the
+PR checks for the exact tested SHA and container build evidence. Local Docker
+validation is unavailable in the editing environment.
+
+Still pending: live AWS/Azure/GCP identity and object retrieval, real OTLP collector
+receipt, load/penetration/compliance reviews, image/action pinning and security
+scanning. Mocked cloud tests and in-memory telemetry tests do not close those gates.
+Version remains 0.2.0rc2 until release scope and outstanding promotion gates are
+satisfied; merging dependency updates does not itself certify production readiness.
