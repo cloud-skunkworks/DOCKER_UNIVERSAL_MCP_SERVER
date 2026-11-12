@@ -1,6 +1,7 @@
 import pytest
 from mcp import Client
 from opentelemetry.sdk.trace import TracerProvider
+from opentelemetry.sdk.trace.sampling import ALWAYS_ON
 from opentelemetry.sdk.trace.export import SimpleSpanProcessor
 from opentelemetry.sdk.trace.export.in_memory_span_exporter import InMemorySpanExporter
 from mcp_rag.telemetry import RetrievalOnlyExporter
@@ -9,7 +10,7 @@ from mcp_rag.server import create_server
 @pytest.mark.anyio
 async def test_payload_not_exported(docs, monkeypatch):
     sink = InMemorySpanExporter()
-    provider = TracerProvider()
+    provider = TracerProvider(sampler=ALWAYS_ON)
     provider.add_span_processor(SimpleSpanProcessor(RetrievalOnlyExporter(sink)))
     monkeypatch.setattr("mcp_rag.server.trace.get_tracer", provider.get_tracer)
     async with Client(create_server(docs)) as client:

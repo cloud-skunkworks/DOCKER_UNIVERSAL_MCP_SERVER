@@ -118,7 +118,7 @@ rejection; and OpenTelemetry export that drops query text, document text and exc
 
 ### 4.1 Prerequisites
 
-- Python 3.12 or later (the container uses `python:3.12-slim`).
+- Python 3.12 or later (the container uses `python:3.15-slim`).
 - Docker Engine with Compose v2, running Linux containers.
 - Optional: AWS, Azure or GCP access if you want to test cloud corpus loading.
 
@@ -238,10 +238,10 @@ then builds the image, waits for health, runs the client and stops the stack.
 - **`421 Misdirected Request` from `/mcp`.** The `Host` header is not an allowed local
   name. Call it from `127.0.0.1` or `localhost`.
 
-## 5. Smoke test results (rc2)
+## 5. Historical smoke test results (rc2, October 19)
 
-All results below come from running this exact release candidate. The table shows what
-passed, what was run in this release, and what is still pending.
+The tables below preserve the October 19 baseline, not the current branch validation.
+See [the current validation addendum](docs/VALIDATION.md#stability-refresh--2026-11-12) for newer evidence and remaining release gates.
 
 ### 5.1 Environment
 
