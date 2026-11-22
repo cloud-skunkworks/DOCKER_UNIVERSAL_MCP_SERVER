@@ -5,6 +5,9 @@ permissions:
 jobs:
   verify:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      NO_PROXY: localhost,127.0.0.1
     strategy:
       fail-fast: false
       matrix:
@@ -19,25 +22,54 @@ jobs:
           python-version: ${{ matrix.python }}
           cache: pip
       - name: Install pinned dependencies
+        id: install
         run: |
           python -m pip install -r requirements-dev.txt -c requirements.lock
           if ($LASTEXITCODE -ne 0) { throw 'Dependency install failed' }
       - name: Check dependency consistency
+        id: dependencies
         run: |
-          python -m pip check
+          python scripts/ci_checks.py dependencies
           if ($LASTEXITCODE -ne 0) { throw 'Dependency consistency check failed' }
       - name: Tests and architecture checks
+        id: tests
         run: ./scripts/verify.ps1
       - name: Build and start container
+        id: build
         run: |
           docker compose config --quiet
           if ($LASTEXITCODE -ne 0) { throw 'Invalid Compose configuration' }
           docker compose up --build --wait --wait-timeout 120
           if ($LASTEXITCODE -ne 0) { throw 'Container startup failed' }
-      - name: MCP container smoke test
+      - name: Smoke 1 - container health
+        id: health
         run: |
-          python examples/agent_client.py
-          if ($LASTEXITCODE -ne 0) { throw 'MCP container smoke test failed' }
+          python scripts/ci_checks.py health
+          if ($LASTEXITCODE -ne 0) { throw 'Health smoke test failed' }
+      - name: Smoke 2 - MCP retrieval
+        id: retrieval
+        if: ${{ !cancelled() && steps.build.outcome == 'success' }}
+        run: |
+          python scripts/ci_checks.py retrieval
+          if ($LASTEXITCODE -ne 0) { throw 'MCP retrieval smoke test failed' }
       - name: Stop container
+        id: cleanup
         if: always()
-        run: docker compose down
+        run: |
+          docker compose down
+          if ($LASTEXITCODE -ne 0) { throw 'Container cleanup failed' }
+      - name: Write validation report
+        if: always()
+        env:
+          CHECK_STEPS_JSON: ${{ toJSON(steps) }}
+        run: |
+          python scripts/ci_checks.py report
+          if ($LASTEXITCODE -ne 0) { throw 'Validation incomplete or failed; see text report' }
+      - name: Upload validation report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: validation-python-${{ matrix.python }}
+          path: reports/validation.txt
+          if-no-files-found: error
+          retention-days: 14
